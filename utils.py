@@ -1,6 +1,6 @@
 import os
 
-def combine_and_delete_monthly_links(year, month):
+def monthly_links(year, month, output_file):
     """
     Combines all the movie links from the individual files for the specified year and month
     into a single file named '{year}-{month:02d}_links.txt'. After that, it deletes the
@@ -14,7 +14,6 @@ def combine_and_delete_monthly_links(year, month):
         None
     """
     month_str = f"{month:02d}"
-    output_file = f"{year}-{month_str}_links.txt"
 
     # Combine links into a single file
     links = []
@@ -30,8 +29,6 @@ def combine_and_delete_monthly_links(year, month):
 
     with open(output_file, 'w') as fo:
         fo.write('\n'.join(links))
-
-    print(f'Done writing {len(links)} links to {output_file}')
 
     # Delete individual files
     for day in range(1, 32):
