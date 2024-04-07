@@ -14,7 +14,7 @@ def get_movie_details(movie_url):
     req = urllib.request.Request(movie_url, headers={'User-Agent': 'Mozilla/5.0'})
     try:
         response = urllib.request.urlopen(req)
-        soup = BeautifulSoup(response, 'html.parser')
+        soup = BeautifulSoup(response, 'lxml')
 
         # Extract title, year of release, rating, and genre
         meta_tag = soup.find('meta', property='og:title')

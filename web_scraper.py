@@ -51,7 +51,7 @@ def get_movies_per_date(year, month, cache_dir="cache"):
     """
     movies_per_date = {}
     num_days = calendar.monthrange(year, month)[1]
-    month_dir = os.path.join("movies", str(year), str(month).zfill(2))
+    month_dir = os.path.join("movie_links", str(year), str(month).zfill(2))
     os.makedirs(month_dir, exist_ok=True)
 
     for day in range(1, num_days + 1):
@@ -87,7 +87,7 @@ def get_movies_per_date(year, month, cache_dir="cache"):
 month_dict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
 
 start_year = 2000
-end_year = 2000
+end_year = 2023
 DIR = f'data'
 
 os.makedirs(DIR, exist_ok=True)
@@ -97,7 +97,7 @@ start_time = time.time()
 for year in range(start_year, end_year + 1):
     for month in month_dict:
         month_str = f"{month:02d}"
-        movies_released = get_movies_per_date(year, month, cache_dir=os.path.join(DIR, "cache"))
+        movies_released = get_movies_per_date(year, month, cache_dir="cache")
         with open(f'{DIR}/movies_released_{year}.csv', 'a') as f:
             f.write(f'{month_dict[month]}: {sum(movies_released.values())}\n')
 
