@@ -1,125 +1,124 @@
 import os
 import urllib
 from bs4 import BeautifulSoup
+import pickle
+import requests
 
-def get_movie_details(movie_url):
-    """
-    Retrieves movie details from IMDb by scraping the provided URL.
+def fetch_page(url, cache_dir="cache"):
+    """Fetches the content of a web page, using caching for efficiency.
+
+    This function retrieves the HTML content of a given URL. It first checks
+    if the content is already cached in a local file. If it is, the cached
+    content is loaded and returned. Otherwise, the function fetches the content
+    from the web using a user-agent header and stores it in the cache directory
+    before returning it.
+
     Args:
-        movie_url (str): The URL of the IMDb movie page.
+        url (str): The URL of the web page to fetch.
+        cache_dir (str, optional): The directory to store cached web pages.
+            Defaults to "cache".
+
     Returns:
-        dict: A dictionary containing the movie details, including title, year, rating,
-        genre, runtime, director, cast, description, certificate, and URL.
+        BeautifulSoup: The parsed HTML content of the web page.
     """
-    req = urllib.request.Request(movie_url, headers={'User-Agent': 'Mozilla/5.0'})
-    try:
-        response = urllib.request.urlopen(req)
-        soup = BeautifulSoup(response, 'lxml')
 
-        # Extract title, year of release, rating, and genre
-        meta_tag = soup.find('meta', property='og:title')
-        if meta_tag:
-            content = meta_tag.get('content')
-            title_year, rating_genre = content.split('⭐')
-            title = title_year.split()[:-1]
-            title = ' '.join(title)
-            year = title_year.split()[-1]
-            year = int(year.strip('(').strip(')'))
-            rating = float(rating_genre.split('|')[0].strip())
-            genre = rating_genre.split('|')[1].strip()
-        else:
-            title = None
-            year = None
-            rating = None
-            genre = None
+    cache_file = os.path.join(cache_dir, f"{url.replace('/', '_')}.pkl")
+    if os.path.exists(cache_file):
+        with open(cache_file, 'rb') as f:
+            return pickle.load(f)
+    else:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=300) as response:
+            soup = BeautifulSoup(response, 'lxml')  # Using lxml parser
+            os.makedirs(cache_dir, exist_ok=True)
+            with open(cache_file, 'wb') as f:
+                pickle.dump(soup, f)
+            return soup
+        
+def get_movie_details(url):
+    """
+    Scrapes movie details from the provided IMDb URL.
 
-        # Extract runtime and certificate
-        meta_tag = soup.find('meta', property='og:description')
-        if meta_tag:
-            content = meta_tag.get('content')
-            if '|' in content:
-                runtime_str, certificate = content.split('|')
-                runtime_str = ''.join(filter(str.isdigit, runtime_str))
-                runtime = int(runtime_str[0]) * 60 + int(runtime_str[1:])
-            else:
-                content = ''.join(filter(str.isdigit, content))
-                runtime = int(content[0]) * 60 + int(content[1:])
-                certificate = None
-        else:
-            runtime = None
-            certificate = None
+    Args:
+        url (str): The URL of the IMDb movie page.
 
-        # Extract director
-        description_meta = soup.find('meta', attrs={'name': 'description'})
-        if description_meta and 'Directed by ' in description_meta['content']:
-            director = description_meta['content'].split(': Directed by ')[1].split('.')[0]
-        else:
-            director = None
+    Returns:
+        dict: A dictionary containing the following movie details:
+            - Title: The title of the movie.
+            - Year: The release year of the movie.
+            - Genre: The genre(s) of the movie.
+            - Rating: The IMDb rating of the movie.
+            - Runtime: The runtime of the movie in minutes.
+            - Certificate: The certificate/rating of the movie.
+            - Directors: A list of the movie's directors.
+            - Cast: A list of the movie's cast members.
+            - Description: The description of the movie.
+    """
+    movie_details = {}
 
-        # Extract cast
-        if description_meta:
-            cast = description_meta['content'].split('With ')[1].split('.')[0]
-        else:
-            cast = None
-
-        # Extract description
-        if description_meta:
-            description = ' '.join(description_meta['content'].split('. ')[2:])
-        else:
-            description = None
-
-        movie_details = {
-            'Title': title,
-            'Year': year,
-            'Rating': rating,
-            'Genre': genre,
-            'Runtime': runtime,
-            'Director': director,
-            'Cast': cast,
-            'Description': description,
-            'Certificate': certificate,
-            'URL': movie_url
-        }
+    response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+    if response.status_code != 200:
+        print("Failed to retrieve movie details:", response.status_code)
         return movie_details
-    except (urllib.error.URLError, ValueError, IndexError, AttributeError):
-        return None
-    
-def monthly_links(year, month, output_file):
-    """
-    Combines all the movie links from the individual files for the specified year and month
-    into a single file named '{year}-{month:02d}_links.txt'. After that, it deletes the
-    individual files.
 
-    Args:
-        year (int): The year for which to combine the links.
-        month (int): The month for which to combine the links.
+    soup = BeautifulSoup(response.content, 'html.parser')
 
-    Returns:
-        None
-    """
-    month_str = f"{month:02d}"
+    # Extract title, year, genre, and rating
+    movie_details['Title'] = soup.title.text.split('- IMDb')[0]
+    movie_details['Year'] = int(soup.find(lambda tag: tag.name == 'a' and 'releaseinfo' in tag.get('href', '')).text)
+    movie_details['Genre'] = ', '.join([span.text.strip() for span in soup.find_all('a', class_="ipc-chip ipc-chip--on-baseAlt")])
+    movie_details['Rating'] = float(soup.find('span', class_='sc-bde20123-1 cMEQkK').text)
 
-    # Combine links into a single file
-    links = []
-    for day in range(1, 32):
-        day_str = f"{day:02d}"
-        file_path = f"movies/{year}/{month_str}/{year}-{month_str}-{day_str}_links.txt"
-        if os.path.exists(file_path):
-            with open(file_path, 'r') as file:
-                links.extend(file.read().splitlines())
-            print(f"Wrote links from {file_path} to '{output_file}'")
+    # Extract runtime and certificate
+    meta_tag = soup.find('meta', property='og:description')
+    if meta_tag:
+        content = meta_tag.get('content')
+        if '|' in content:
+            runtime_str, certificate = content.split('|')
+            runtime_str = ''.join(filter(str.isdigit, runtime_str))
+            movie_details['Runtime'] = int(runtime_str[0]) * 60 + int(runtime_str[1:])
+            movie_details['Certificate'] = certificate.strip()
         else:
-            print(f"No file found for {year}-{month_str}-{day_str}")
+            content = ''.join(filter(str.isdigit, content))
+            movie_details['Runtime'] = int(content[0]) * 60 + int(content[1:])
+            movie_details['Certificate'] = None
+    else:
+        movie_details['Runtime'] = None
+        movie_details['Certificate'] = None
 
-    with open(output_file, 'w') as fo:
-        fo.write('\n'.join(links))
+    # Extract full credits URL segment
+    credits_url_segment = soup.find(lambda tag: tag.name == 'a' and 'fullcredits' in tag.get('href', '')).get('href')
 
-    # # Delete individual files
-    # for day in range(1, 32):
-    #     day_str = f"{day:02d}"
-    #     file_path = f"movies/{year}/{month_str}/{year}-{month_str}-{day_str}_links.txt"
-    #     if os.path.exists(file_path):
-    #         os.remove(file_path)
-    #         print(f"Deleted {file_path}")
+    # Fetch full credits page
+    base_url = "https://www.imdb.com"
+    credits_response = requests.get(f'{base_url}{credits_url_segment}')
+    if credits_response.status_code != 200:
+        print("Failed to retrieve full credits page:", credits_response.status_code)
+        return movie_details
 
-    # print("All individual files deleted.")
+    credits_soup = BeautifulSoup(credits_response.content, 'html.parser')
+
+    # Extract directors from the table
+    directors = []
+    table = credits_soup.find('table', class_='simpleTable simpleCreditsTable')
+    if table:
+        for row in table.find_all('tr'):
+            director_element = row.find('td', class_='name')
+            if director_element:
+                director_name = director_element.a.text.strip()
+                directors.append(director_name)
+    movie_details['Directors'] = directors
+
+    # Extract cast names
+    cast_names = []
+    cast_table = credits_soup.find("table", class_="cast_list")
+    if cast_table:
+        cast_td_elements = cast_table.find_all("td", class_=lambda value: value != "character")
+        cast_names = [td.find("a").text.strip() for td in cast_td_elements if td.find("a")]
+        cast_names = [name for name in cast_names if name]
+    movie_details['Cast'] = cast_names
+
+    # Extract description
+    movie_details['Description'] = soup.find('meta', {'name': 'description'}).get('content')
+
+    return movie_details

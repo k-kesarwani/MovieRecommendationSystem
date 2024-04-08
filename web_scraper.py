@@ -1,42 +1,10 @@
 import concurrent.futures
 import urllib.request
 from bs4 import BeautifulSoup
+from utils import fetch_page
 import calendar
 import os
 import time
-import pickle
-
-def fetch_page(url, cache_dir="cache"):
-    """Fetches the content of a web page, using caching for efficiency.
-
-    This function retrieves the HTML content of a given URL. It first checks
-    if the content is already cached in a local file. If it is, the cached
-    content is loaded and returned. Otherwise, the function fetches the content
-    from the web using a user-agent header and stores it in the cache directory
-    before returning it.
-
-    Args:
-        url (str): The URL of the web page to fetch.
-        cache_dir (str, optional): The directory to store cached web pages.
-            Defaults to "cache".
-
-    Returns:
-        BeautifulSoup: The parsed HTML content of the web page.
-    """
-
-    cache_file = os.path.join(cache_dir, f"{url.replace('/', '_')}.pkl")
-    if os.path.exists(cache_file):
-        with open(cache_file, 'rb') as f:
-            return pickle.load(f)
-    else:
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=300) as response:
-            soup = BeautifulSoup(response, 'lxml')  # Using lxml parser
-            os.makedirs(cache_dir, exist_ok=True)
-            with open(cache_file, 'wb') as f:
-                pickle.dump(soup, f)
-            return soup
-
 
 def get_movies_per_date(year, month, cache_dir="cache"):
     """
