@@ -56,7 +56,7 @@ month_dict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Ju
 
 start_year = 2000
 end_year = 2023
-DIR = f'data'
+DIR = f'tmp'
 
 os.makedirs(DIR, exist_ok=True)
 
@@ -65,7 +65,7 @@ start_time = time.time()
 for year in range(start_year, end_year + 1):
     for month in month_dict:
         month_str = f"{month:02d}"
-        movies_released = get_movies_per_date(year, month, cache_dir="cache")
+        movies_released = get_movies_per_date(year, month, cache_dir=f"{DIR}/cache")
         with open(f'{DIR}/movies_released_{year}.csv', 'a') as f:
             f.write(f'{month_dict[month]}: {sum(movies_released.values())}\n')
 

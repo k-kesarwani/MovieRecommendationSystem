@@ -1,2 +1,5 @@
 movie_links
-cache
+tmp
+sql_passkey.txt
+Movie_DB.mwb
+Movie_DB.mwb.bak

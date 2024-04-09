@@ -64,34 +64,35 @@ def get_movie_details(url):
     soup = BeautifulSoup(response.content, 'html.parser')
 
     # Extract title, year, genre, and rating
-    movie_details['Title'] = soup.title.text.split('- IMDb')[0]
-    movie_details['Year'] = int(soup.find(lambda tag: tag.name == 'a' and 'releaseinfo' in tag.get('href', '')).text)
-    movie_details['Genre'] = ', '.join([span.text.strip() for span in soup.find_all('a', class_="ipc-chip ipc-chip--on-baseAlt")])
-    movie_details['Rating'] = float(soup.find('span', class_='sc-bde20123-1 cMEQkK').text)
+    title = soup.title.text.split('- IMDb')[0]
+    year = int(soup.find(lambda tag: tag.name == 'a' and 'releaseinfo' in tag.get('href', '')).text)
+    genre = ', '.join([span.text.strip() for span in soup.find_all('a', class_="ipc-chip ipc-chip--on-baseAlt")])
+    rating = float(soup.find('span', class_='sc-bde20123-1 cMEQkK').text)
 
     # Extract runtime and certificate
     meta_tag = soup.find('meta', property='og:description')
     if meta_tag:
         content = meta_tag.get('content')
-        if '|' in content:
-            runtime_str, certificate = content.split('|')
-            runtime_str = ''.join(filter(str.isdigit, runtime_str))
-            movie_details['Runtime'] = int(runtime_str[0]) * 60 + int(runtime_str[1:])
-            movie_details['Certificate'] = certificate.strip()
-        else:
-            content = ''.join(filter(str.isdigit, content))
-            movie_details['Runtime'] = int(content[0]) * 60 + int(content[1:])
-            movie_details['Certificate'] = None
-    else:
-        movie_details['Runtime'] = None
-        movie_details['Certificate'] = None
+        runtime = None
+        certificate = None
+        if content:
+            parts = content.split('|')
+            if len(parts) == 2:
+                runtime_str, certificate = parts
+                runtime_str = runtime_str.strip()
+                if runtime_str:
+                    time_parts = runtime_str.split()
+                    if len(time_parts) == 2:
+                        hours, minutes = time_parts
+                        runtime = int(hours[:-1]) * 60 + int(minutes[:-1])
+                certificate = certificate.strip()
 
     # Extract full credits URL segment
     credits_url_segment = soup.find(lambda tag: tag.name == 'a' and 'fullcredits' in tag.get('href', '')).get('href')
 
     # Fetch full credits page
     base_url = "https://www.imdb.com"
-    credits_response = requests.get(f'{base_url}{credits_url_segment}')
+    credits_response = requests.get(f'{base_url}{credits_url_segment}', timeout= 300)
     if credits_response.status_code != 200:
         print("Failed to retrieve full credits page:", credits_response.status_code)
         return movie_details
@@ -107,7 +108,6 @@ def get_movie_details(url):
             if director_element:
                 director_name = director_element.a.text.strip()
                 directors.append(director_name)
-    movie_details['Directors'] = directors
 
     # Extract cast names
     cast_names = []
@@ -116,9 +116,21 @@ def get_movie_details(url):
         cast_td_elements = cast_table.find_all("td", class_=lambda value: value != "character")
         cast_names = [td.find("a").text.strip() for td in cast_td_elements if td.find("a")]
         cast_names = [name for name in cast_names if name]
-    movie_details['Cast'] = cast_names
 
     # Extract description
-    movie_details['Description'] = soup.find('meta', {'name': 'description'}).get('content')
+    description = soup.find('meta', {'name': 'description'}).get('content')
+
+    # Construct the movie_details dictionary
+    movie_details = {
+        'Title': title,
+        'Year': year,
+        'Genre': genre,
+        'Rating': rating,
+        'Runtime': runtime,
+        'Certificate': certificate,
+        'Directors': directors,
+        'Cast': cast_names,
+        'Description': description
+    }
 
     return movie_details
