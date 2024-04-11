@@ -1,6 +1,4 @@
 import concurrent.futures
-import urllib.request
-from bs4 import BeautifulSoup
 from utils import fetch_page
 import calendar
 import os

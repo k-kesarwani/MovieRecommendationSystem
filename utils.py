@@ -65,7 +65,12 @@ def get_movie_details(url):
 
     # Extract title, year, genre, and rating
     title = soup.title.text.split('- IMDb')[0]
-    year = int(soup.find(lambda tag: tag.name == 'a' and 'releaseinfo' in tag.get('href', '')).text)
+    year = None
+    year_tag = soup.find(lambda tag: tag.name == 'a' and 'releaseinfo' in tag.get('href', ''))
+    if year_tag:
+        year_text = year_tag.text.strip()
+        if year_text.isdigit():
+            year = int(year_text)
     genre = ', '.join([span.text.strip() for span in soup.find_all('a', class_="ipc-chip ipc-chip--on-baseAlt")])
     rating = float(soup.find('span', class_='sc-bde20123-1 cMEQkK').text)
 
@@ -88,11 +93,16 @@ def get_movie_details(url):
                 certificate = certificate.strip()
 
     # Extract full credits URL segment
-    credits_url_segment = soup.find(lambda tag: tag.name == 'a' and 'fullcredits' in tag.get('href', '')).get('href')
-
+    credits_url_segment = None
+    try:
+        credits_url_segment = soup.find(lambda tag: tag.name == 'a' and 'fullcredits' in tag.get('href', '')).get('href')
+    except AttributeError:
+        print("Failed to find full credits URL segment")
+        return movie_details
+    
     # Fetch full credits page
     base_url = "https://www.imdb.com"
-    credits_response = requests.get(f'{base_url}{credits_url_segment}', timeout= 300)
+    credits_response = requests.get(f'{base_url}{credits_url_segment}', timeout= 600)
     if credits_response.status_code != 200:
         print("Failed to retrieve full credits page:", credits_response.status_code)
         return movie_details
