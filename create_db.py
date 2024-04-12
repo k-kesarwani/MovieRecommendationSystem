@@ -10,19 +10,19 @@ db_config = {
     'user': 'root',
     'password': pswd,
     'database': 'recommendation_system'
-}
+} 
 
 month_dict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
 
-start_year = 2016
-end_year = 2023
+start_year = 2020 
+end_year = 2020
 
 # Establish database connection
 connection = mysql.connector.connect(**db_config)
 cursor = connection.cursor()
 
 for year in range(start_year, end_year + 1):
-    for month in month_dict:
+    for month in range(1, 13):
         month_str = f"{month:02d}"
         for day in range(1, 32):
             day_str = f"{day:02d}"

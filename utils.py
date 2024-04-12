@@ -72,7 +72,11 @@ def get_movie_details(url):
         if year_text.isdigit():
             year = int(year_text)
     genre = ', '.join([span.text.strip() for span in soup.find_all('a', class_="ipc-chip ipc-chip--on-baseAlt")])
-    rating = float(soup.find('span', class_='sc-bde20123-1 cMEQkK').text)
+    
+    rating= None
+    rating_tag= soup.find('span', class_='sc-bde20123-1 cMEQkK')
+    if rating_tag:
+        rating = float(rating_tag.text)
 
     # Extract runtime and certificate
     meta_tag = soup.find('meta', property='og:description')
