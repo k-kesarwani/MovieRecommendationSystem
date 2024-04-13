@@ -1,6 +1,5 @@
--- Connect to the DB
+-- Connet to the db
 USE recommendation_system;
 
--- Alter Table datatype
-ALTER TABLE movies
-MODIFY COLUMN Directors TEXT;
+-- Reset index
+ALTER TABLE movies auto_increment= 1;
