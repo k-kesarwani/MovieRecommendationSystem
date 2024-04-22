@@ -14,8 +14,8 @@ db_config = {
 
 month_dict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
 
-start_year = 2000 
-end_year = 2000
+start_year = 1990 
+end_year = 2023
 
 # Establish database connection
 connection = mysql.connector.connect(**db_config)

@@ -3,11 +3,6 @@ from utils import fetch_page
 import calendar
 import os
 import time
-import re
-
-import os
-import calendar
-import concurrent.futures
 
 def get_movies_per_date(year, month, cache_dir="tmp/cache"):
     """
@@ -55,7 +50,7 @@ def get_movies_per_date(year, month, cache_dir="tmp/cache"):
 month_dict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
 
 start_year = 1990
-end_year = 2000
+end_year = 2023
 DIR = f'tmp'
 os.makedirs(DIR, exist_ok=True)
 
